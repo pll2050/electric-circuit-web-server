@@ -9,11 +9,11 @@ import (
 
 // ProjectHandler handles project-related HTTP requests
 type ProjectHandler struct {
-	projectController *controllers.ProjectController
+	projectController ProjectControllerInterface
 }
 
 // NewProjectHandler creates a new project handler
-func NewProjectHandler(projectController *controllers.ProjectController) *ProjectHandler {
+func NewProjectHandler(projectController ProjectControllerInterface) *ProjectHandler {
 	return &ProjectHandler{
 		projectController: projectController,
 	}

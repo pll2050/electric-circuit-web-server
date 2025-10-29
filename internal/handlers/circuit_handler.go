@@ -9,11 +9,11 @@ import (
 
 // CircuitHandler handles circuit-related HTTP requests
 type CircuitHandler struct {
-	circuitController *controllers.CircuitController
+	circuitController CircuitControllerInterface
 }
 
 // NewCircuitHandler creates a new circuit handler
-func NewCircuitHandler(circuitController *controllers.CircuitController) *CircuitHandler {
+func NewCircuitHandler(circuitController CircuitControllerInterface) *CircuitHandler {
 	return &CircuitHandler{
 		circuitController: circuitController,
 	}
@@ -237,8 +237,8 @@ func (h *CircuitHandler) HandleGetTemplates(w http.ResponseWriter, r *http.Reque
 	// For now, return a simple templates response
 	// This should be implemented in the circuit controller
 	h.writeJSON(w, map[string]interface{}{
-		"success": true,
-		"message": "Templates feature not yet implemented",
+		"success":   true,
+		"message":   "Templates feature not yet implemented",
 		"templates": []interface{}{},
 	})
 }

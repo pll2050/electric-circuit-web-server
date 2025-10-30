@@ -159,3 +159,44 @@ func (r *UserRepository) Exists(id string) (bool, error) {
 
 	return exists, nil
 }
+
+// GetAll retrieves all users from the database
+func (r *UserRepository) GetAll() ([]*models.User, error) {
+	query := `
+		SELECT id, email, display_name, photo_url, provider, created_at, updated_at
+		FROM users
+		ORDER BY created_at DESC
+	`
+
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query users: %v", err)
+	}
+	defer rows.Close()
+
+	var users []*models.User
+	for rows.Next() {
+		user := &models.User{}
+
+		err := rows.Scan(
+			&user.ID,
+			&user.Email,
+			&user.DisplayName,
+			&user.PhotoURL,
+			&user.Provider,
+			&user.CreatedAt,
+			&user.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan user: %v", err)
+		}
+
+		users = append(users, user)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating users: %v", err)
+	}
+
+	return users, nil
+}

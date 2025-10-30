@@ -42,4 +42,5 @@ type AuthControllerInterface interface {
 	DeleteUser(ctx context.Context, req *AuthRequest) (*AuthResponse, error)
 	SetCustomClaims(ctx context.Context, req *AuthRequest) (*AuthResponse, error)
 	Register(ctx context.Context, req *AuthRequest) (*AuthResponse, error)
+	ListUsers(ctx context.Context) ([]map[string]interface{}, error)
 }

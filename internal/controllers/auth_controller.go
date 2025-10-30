@@ -286,3 +286,27 @@ func (c *AuthController) Register(ctx context.Context, req *AuthRequest) (*AuthR
 		DBUser:  user,
 	}, nil
 }
+
+// ListUsers lists all users from PostgreSQL database
+func (c *AuthController) ListUsers(ctx context.Context) ([]map[string]interface{}, error) {
+	users, err := c.authService.ListUsers()
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to map format for JSON response
+	result := make([]map[string]interface{}, len(users))
+	for i, user := range users {
+		result[i] = map[string]interface{}{
+			"uid":          user.UID,
+			"email":        user.Email,
+			"displayName":  user.DisplayName,
+			"photoURL":     user.PhotoURL,
+			"provider":     user.Provider,
+			"createdAt":    user.CreatedAt,
+			"lastLoginAt":  user.LastLoginAt,
+		}
+	}
+
+	return result, nil
+}

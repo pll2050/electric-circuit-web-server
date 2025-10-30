@@ -40,6 +40,9 @@ func (h *HTTPHandler) SetupRoutes() {
 	// Public auth routes (no auth required)
 	http.HandleFunc("/api/auth/", middleware.CORS(h.routeAuth))
 
+	// Admin routes (require auth)
+	http.HandleFunc("/api/users", middleware.CORS(h.withAuth(h.routeUsers)))
+
 	// Protected routes (require auth)
 	http.HandleFunc("/api/circuits", middleware.CORS(h.withAuth(h.routeCircuits)))
 	http.HandleFunc("/api/projects", middleware.CORS(h.withAuth(h.routeProjects)))
@@ -164,6 +167,24 @@ func (h *HTTPHandler) routeStorage(w http.ResponseWriter, r *http.Request) {
 		h.storageHandler.HandleListFiles(w, r)
 	case path == "/upload-circuit-image" && r.Method == "POST":
 		h.storageHandler.HandleUploadCircuitImage(w, r)
+	default:
+		http.NotFound(w, r)
+	}
+}
+
+// routeUsers handles user-related HTTP routing
+func (h *HTTPHandler) routeUsers(w http.ResponseWriter, r *http.Request) {
+	// Handle OPTIONS preflight request
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	path := r.URL.Path
+
+	switch {
+	case path == "/api/users" && r.Method == "GET":
+		h.authHandler.HandleListUsers(w, r)
 	default:
 		http.NotFound(w, r)
 	}

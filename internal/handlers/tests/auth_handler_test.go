@@ -48,6 +48,21 @@ func (m *MockAuthController) Register(ctx context.Context, req *controllers.Auth
 	return &controllers.AuthResponse{Success: true, Message: "User registered"}, nil
 }
 
+func (m *MockAuthController) ListUsers(ctx context.Context) ([]map[string]interface{}, error) {
+	return []map[string]interface{}{
+		{
+			"uid":         "test-uid-1",
+			"email":       "test1@example.com",
+			"displayName": "Test User 1",
+		},
+		{
+			"uid":         "test-uid-2",
+			"email":       "test2@example.com",
+			"displayName": "Test User 2",
+		},
+	}, nil
+}
+
 func TestAuthHandler_HandleVerifyToken_Success(t *testing.T) {
 	// Arrange
 	mockController := &MockAuthController{

@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"electric-circuit-web/server/internal/models"
 	"electric-circuit-web/server/internal/repositories"
@@ -170,4 +171,77 @@ func (s *AuthService) GetUserFromDB(uid string) (*models.User, error) {
 		return nil, fmt.Errorf("failed to get user from database: %v", err)
 	}
 	return user, nil
+}
+
+// ListUsers retrieves all users from Firebase Authentication
+func (s *AuthService) ListUsers() ([]*models.User, error) {
+	// Create iterator to list all users
+	iter := s.client.Users(s.ctx, "")
+
+	var users []*models.User
+
+	// Iterate through all users
+	for {
+		user, err := iter.Next()
+		if err != nil {
+			// Check if we've reached the end
+			if err.Error() == "no more items in iterator" {
+				break
+			}
+			return nil, fmt.Errorf("failed to iterate users: %v", err)
+		}
+
+		// Convert Firebase user to our User model
+		modelUser := &models.User{
+			ID:          user.UID,
+			UID:         user.UID,
+			Email:       user.Email,
+			DisplayName: user.DisplayName,
+			PhotoURL:    user.PhotoURL,
+			Provider:    getProvider(user.ProviderUserInfo),
+		}
+
+		// Set timestamps if available
+		if user.UserMetadata != nil {
+			// Convert Unix milliseconds to time.Time
+			modelUser.CreatedAt = convertUnixMillisToTime(user.UserMetadata.CreationTimestamp)
+
+			if user.UserMetadata.LastLogInTimestamp > 0 {
+				lastLogin := convertUnixMillisToTime(user.UserMetadata.LastLogInTimestamp)
+				modelUser.UpdatedAt = lastLogin
+				modelUser.LastLoginAt = &lastLogin
+			} else {
+				modelUser.UpdatedAt = modelUser.CreatedAt
+			}
+		}
+
+		users = append(users, modelUser)
+	}
+
+	return users, nil
+}
+
+// getProvider extracts the primary auth provider from user info
+func getProvider(providerData []*auth.UserInfo) string {
+	if len(providerData) == 0 {
+		return "email"
+	}
+
+	// Return the first provider ID (e.g., "google.com", "password", etc.)
+	providerID := providerData[0].ProviderID
+
+	// Simplify provider name
+	switch providerID {
+	case "google.com":
+		return "google"
+	case "password":
+		return "email"
+	default:
+		return providerID
+	}
+}
+
+// convertUnixMillisToTime converts Unix milliseconds timestamp to time.Time
+func convertUnixMillisToTime(millis int64) time.Time {
+	return time.Unix(millis/1000, (millis%1000)*1000000)
 }

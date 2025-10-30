@@ -9,11 +9,11 @@ import (
 
 // AuthHandler handles authentication-related HTTP requests
 type AuthHandler struct {
-	authController *controllers.AuthController
+	authController controllers.AuthControllerInterface
 }
 
 // NewAuthHandler creates a new auth handler
-func NewAuthHandler(authController *controllers.AuthController) *AuthHandler {
+func NewAuthHandler(authController controllers.AuthControllerInterface) *AuthHandler {
 	return &AuthHandler{
 		authController: authController,
 	}
@@ -157,5 +157,40 @@ func (h *AuthHandler) HandleSetCustomClaims(w http.ResponseWriter, r *http.Reque
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+}
+
+// HandleRegister handles Google OAuth user registration
+func (h *AuthHandler) HandleRegister(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req controllers.AuthRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// HTTP-level validation: Check required fields
+	if req.IDToken == "" {
+		http.Error(w, "ID token is required", http.StatusBadRequest)
+		return
+	}
+
+	resp, err := h.authController.Register(r.Context(), &req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if !resp.Success {
+		http.Error(w, resp.Error, http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(resp)
 }

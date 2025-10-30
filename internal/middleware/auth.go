@@ -69,6 +69,12 @@ func CORS(next http.HandlerFunc) http.HandlerFunc {
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
+		// 로컬호스트에서만 Cross-Origin-Opener-Policy 헤더 삭제
+		origin := r.Header.Get("Origin")
+		if strings.HasPrefix(origin, "http://localhost") || strings.HasPrefix(origin, "https://localhost") {
+			w.Header().Del("Cross-Origin-Opener-Policy")
+		}
+
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
 			return

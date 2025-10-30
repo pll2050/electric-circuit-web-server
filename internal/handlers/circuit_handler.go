@@ -9,11 +9,11 @@ import (
 
 // CircuitHandler handles circuit-related HTTP requests
 type CircuitHandler struct {
-	circuitController CircuitControllerInterface
+	circuitController controllers.CircuitControllerInterface
 }
 
 // NewCircuitHandler creates a new circuit handler
-func NewCircuitHandler(circuitController CircuitControllerInterface) *CircuitHandler {
+func NewCircuitHandler(circuitController controllers.CircuitControllerInterface) *CircuitHandler {
 	return &CircuitHandler{
 		circuitController: circuitController,
 	}
@@ -96,6 +96,16 @@ func (h *CircuitHandler) HandleCreateCircuit(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	req.UserID = userID
+
+	// HTTP-level validation: Check required fields
+	if req.Name == "" {
+		h.writeError(w, "Circuit name is required", http.StatusBadRequest)
+		return
+	}
+	if req.ProjectID == "" {
+		h.writeError(w, "Project ID is required", http.StatusBadRequest)
+		return
+	}
 
 	response, err := h.circuitController.CreateCircuit(r.Context(), &req)
 	if err != nil {
@@ -262,6 +272,20 @@ func (h *CircuitHandler) HandleCreateFromTemplate(w http.ResponseWriter, r *http
 		return
 	}
 	req.UserID = userID
+
+	// HTTP-level validation: Check required fields
+	if req.TemplateID == "" {
+		h.writeError(w, "Template ID is required", http.StatusBadRequest)
+		return
+	}
+	if req.Name == "" {
+		h.writeError(w, "Circuit name is required", http.StatusBadRequest)
+		return
+	}
+	if req.ProjectID == "" {
+		h.writeError(w, "Project ID is required", http.StatusBadRequest)
+		return
+	}
 
 	response, err := h.circuitController.CreateFromTemplate(r.Context(), &req)
 	if err != nil {

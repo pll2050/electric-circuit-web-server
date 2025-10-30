@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 
+	"electric-circuit-web/server/internal/models"
 	"electric-circuit-web/server/internal/services"
 
 	"firebase.google.com/go/v4/auth"
@@ -23,19 +24,22 @@ func NewAuthController(authService *services.AuthService) *AuthController {
 // AuthRequest represents an authentication operation request
 type AuthRequest struct {
 	Token        string                 `json:"token,omitempty"`
-	UID          string                 `json:"uid,omitempty"`
+	UID          string                 `json:"uid,omitempty"`          // Firebase UID
 	Email        string                 `json:"email,omitempty"`
 	Password     string                 `json:"password,omitempty"`
 	DisplayName  string                 `json:"display_name,omitempty"`
 	PhotoURL     string                 `json:"photo_url,omitempty"`
+	Provider     string                 `json:"provider,omitempty"`     // Auth provider (google, email, etc.)
 	CustomClaims map[string]interface{} `json:"custom_claims,omitempty"`
+	IDToken      string                 `json:"id_token,omitempty"`     // Google OAuth ID token (deprecated, use UID instead)
 }
 
 // AuthResponse represents an authentication operation response
 type AuthResponse struct {
 	Success      bool                   `json:"success"`
 	Message      string                 `json:"message"`
-	User         *auth.UserRecord       `json:"user,omitempty"`
+	User         *auth.UserRecord       `json:"user,omitempty"`          // Firebase user
+	DBUser       *models.User           `json:"db_user,omitempty"`       // PostgreSQL user
 	Token        string                 `json:"token,omitempty"`
 	CustomClaims map[string]interface{} `json:"custom_claims,omitempty"`
 	Error        string                 `json:"error,omitempty"`
@@ -238,5 +242,47 @@ func (c *AuthController) SetCustomClaims(ctx context.Context, req *AuthRequest) 
 		Success:      true,
 		Message:      "Custom claims set successfully",
 		CustomClaims: req.CustomClaims,
+	}, nil
+}
+
+// Register handles Google OAuth user registration
+// Client sends: { id_token: "JWT-token", provider: "google" }
+// 1. Verify ID token and extract UID
+// 2. Get user info from Firebase using UID
+// 3. Save to PostgreSQL
+func (c *AuthController) Register(ctx context.Context, req *AuthRequest) (*AuthResponse, error) {
+	// Note: Basic validation (required fields) is done in Handler layer
+
+	// Verify ID token and extract user info
+	token, err := c.authService.VerifyIDToken(req.IDToken)
+	if err != nil {
+		return &AuthResponse{
+			Success: false,
+			Error:   "Invalid ID token: " + err.Error(),
+		}, err
+	}
+
+	// Extract UID from verified token
+	uid := token.UID
+
+	// Set default provider if not specified
+	provider := req.Provider
+	if provider == "" {
+		provider = "google"
+	}
+
+	// Call service to register user (Firebase -> PostgreSQL)
+	user, err := c.authService.RegisterUserByUID(uid, provider)
+	if err != nil {
+		return &AuthResponse{
+			Success: false,
+			Error:   err.Error(),
+		}, err
+	}
+
+	return &AuthResponse{
+		Success: true,
+		Message: "User registered successfully",
+		DBUser:  user,
 	}, nil
 }

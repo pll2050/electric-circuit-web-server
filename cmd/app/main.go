@@ -50,16 +50,18 @@ func main() {
 	if firebaseApp != nil {
 		// Initialize Repository layer
 		firestoreRepository := repositories.NewFirestoreService(firebaseApp.Firestore, firebaseApp.GetContext())
+		userRepository := repositories.NewUserRepository(db.DB)
 
 		// Initialize Service layer
-		authService := services.NewAuthService(firebaseApp.Auth, firebaseApp.GetContext())
+		authService := services.NewAuthService(firebaseApp.Auth, firebaseApp.GetContext(), userRepository)
 		projectService := services.NewProjectService(firestoreRepository)
 		circuitService := services.NewFirebaseCircuitService(firestoreRepository, projectService)
+		templateService := services.NewTemplateService()
 
 		// Initialize Controller layer
 		authController := controllers.NewAuthController(authService)
 		projectController := controllers.NewProjectController(projectService)
-		circuitController := controllers.NewCircuitController(circuitService)
+		circuitController := controllers.NewCircuitController(circuitService, templateService)
 		storageController := controllers.NewStorageController()
 
 		// Initialize Handler layer (HTTP Protocol)

@@ -47,15 +47,10 @@ func (s *FirebaseCircuitService) GetProjectCircuits(projectID, userID string) ([
 
 // CreateCircuit creates a new circuit
 func (s *FirebaseCircuitService) CreateCircuit(userID string, circuit *models.CircuitFirestore) (string, error) {
-	// Validate circuit data
-	if circuit.Name == "" {
-		return "", fmt.Errorf("circuit name is required")
-	}
-	if circuit.ProjectID == "" {
-		return "", fmt.Errorf("project ID is required")
-	}
+	// Note: Input validation is done in Handler and Controller layers
+	// Service focuses on business logic
 
-	// Verify user owns the project
+	// Business logic: Verify user owns the project
 	_, err := s.projectService.GetProject(circuit.ProjectID, userID)
 	if err != nil {
 		return "", fmt.Errorf("failed to verify project ownership: %v", err)

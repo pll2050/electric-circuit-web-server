@@ -1,0 +1,107 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Electric Circuit Web API Data Schema",
+  "type": "object",
+  "properties": {
+    "User": {
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string", "format": "uri" },
+        "emailVerified": { "type": "boolean" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Project": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "user_id": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "archived", "deleted"] },
+        "settings": {
+          "type": "object",
+          "properties": {
+            "grid_size": { "type": "integer" },
+            "snap_to_grid": { "type": "boolean" }
+          }
+        },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "user_id", "status"]
+    },
+    "Circuit": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "project_id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "data": {
+          "type": "object",
+          "properties": {
+            "elements": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string" },
+                  "type": { "type": "string" },
+                  "value": { "type": "string" },
+                  "color": { "type": "string" },
+                  "position": {
+                    "type": "object",
+                    "properties": {
+                      "x": { "type": "number" },
+                      "y": { "type": "number" }
+                    },
+                    "required": ["x", "y"]
+                  }
+                },
+                "required": ["id", "type", "position"]
+              }
+            },
+            "connections": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "from": { "type": "string" },
+                  "to": { "type": "string" }
+                },
+                "required": ["from", "to"]
+              }
+            }
+          },
+          "required": ["elements", "connections"]
+        },
+        "version": { "type": "integer" },
+        "is_template": { "type": "boolean" },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "project_id", "user_id", "data"]
+    },
+    "StorageFile": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "path": { "type": "string" },
+        "size": { "type": "integer" },
+        "type": { "type": "string" },
+        "url": { "type": "string", "format": "uri" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "path", "size", "type", "url"]
+    }
+  }
+}

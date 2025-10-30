@@ -44,6 +44,10 @@ func (m *MockAuthController) SetCustomClaims(ctx context.Context, req *controlle
 	return &controllers.AuthResponse{Success: true, Message: "Claims set"}, nil
 }
 
+func (m *MockAuthController) Register(ctx context.Context, req *controllers.AuthRequest) (*controllers.AuthResponse, error) {
+	return &controllers.AuthResponse{Success: true, Message: "User registered"}, nil
+}
+
 func TestAuthHandler_HandleVerifyToken_Success(t *testing.T) {
 	// Arrange
 	mockController := &MockAuthController{

@@ -37,7 +37,7 @@ func (h *HTTPHandler) SetupRoutes() {
 	// Health check (no auth required)
 	http.HandleFunc("/api/health", middleware.CORS(h.healthCheck))
 
-	// Auth routes
+	// Public auth routes (no auth required)
 	http.HandleFunc("/api/auth/", middleware.CORS(h.routeAuth))
 
 	// Protected routes (require auth)
@@ -57,9 +57,17 @@ func (h *HTTPHandler) withAuth(next http.HandlerFunc) http.HandlerFunc {
 
 // routeAuth handles all authentication-related routes
 func (h *HTTPHandler) routeAuth(w http.ResponseWriter, r *http.Request) {
+	// Handle OPTIONS preflight request
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	path := strings.TrimPrefix(r.URL.Path, "/api/auth")
 
 	switch {
+	case path == "/register" && r.Method == "POST":
+		h.authHandler.HandleRegister(w, r)
 	case path == "/verify" && r.Method == "POST":
 		h.authHandler.HandleVerifyToken(w, r)
 	case path == "/create-user" && r.Method == "POST":
@@ -79,6 +87,12 @@ func (h *HTTPHandler) routeAuth(w http.ResponseWriter, r *http.Request) {
 
 // routeCircuits handles circuit-related HTTP routing
 func (h *HTTPHandler) routeCircuits(w http.ResponseWriter, r *http.Request) {
+	// Handle OPTIONS preflight request
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	path := r.URL.Path
 
 	switch {
@@ -103,6 +117,12 @@ func (h *HTTPHandler) routeCircuits(w http.ResponseWriter, r *http.Request) {
 
 // routeProjects handles project-related HTTP routing
 func (h *HTTPHandler) routeProjects(w http.ResponseWriter, r *http.Request) {
+	// Handle OPTIONS preflight request
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	path := r.URL.Path
 
 	switch {
@@ -125,6 +145,12 @@ func (h *HTTPHandler) routeProjects(w http.ResponseWriter, r *http.Request) {
 
 // routeStorage handles storage-related HTTP routing
 func (h *HTTPHandler) routeStorage(w http.ResponseWriter, r *http.Request) {
+	// Handle OPTIONS preflight request
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	path := strings.TrimPrefix(r.URL.Path, "/api/storage")
 
 	switch {

@@ -9,11 +9,11 @@ import (
 
 // StorageHandler handles storage-related HTTP requests
 type StorageHandler struct {
-	storageController StorageControllerInterface
+	storageController controllers.StorageControllerInterface
 }
 
 // NewStorageHandler creates a new storage handler
-func NewStorageHandler(storageController StorageControllerInterface) *StorageHandler {
+func NewStorageHandler(storageController controllers.StorageControllerInterface) *StorageHandler {
 	return &StorageHandler{
 		storageController: storageController,
 	}

@@ -1,12 +1,12 @@
 package tests
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"electric-circuit-web/server/internal/controllers"
-	"electric-circuit-web/server/internal/handlers"
 )
 
 // TestHelper provides common testing utilities
@@ -43,65 +43,32 @@ func (h *TestHelper) CreateTestRequest(method, url, userID string) *http.Request
 	return req
 }
 
-// MockFullStack creates a complete mock stack for integration testing
-type MockFullStack struct {
-	AuthController    *MockAuthController
-	CircuitController *MockCircuitController
-	ProjectController *MockProjectController
-	HTTPHandler       *handlers.HTTPHandler
-}
-
-// NewMockFullStack creates a new mock full stack for testing
-func NewMockFullStack() *MockFullStack {
-	authController := &MockAuthController{
-		verifyTokenResponse: &controllers.AuthResponse{Success: true, Message: "Token verified"},
-	}
-
-	circuitController := &MockCircuitController{
-		getProjectCircuitsResponse: &controllers.CircuitResponse{Success: true, Message: "Circuits retrieved"},
-	}
-
-	projectController := &MockProjectController{
-		getUserProjectsResponse: &controllers.ProjectResponse{Success: true, Message: "Projects retrieved"},
-	}
-
-	// Note: For HTTPHandler, you would need to implement the constructor with all controllers
-	// httpHandler := handlers.NewHTTPHandler(circuitController, projectController, authController, storageController)
-
-	return &MockFullStack{
-		AuthController:    authController,
-		CircuitController: circuitController,
-		ProjectController: projectController,
-		// HTTPHandler:       httpHandler,
-	}
-}
-
 // MockProjectController for completeness
 type MockProjectController struct {
 	getUserProjectsResponse *controllers.ProjectResponse
 	getUserProjectsError    error
 }
 
-func (m *MockProjectController) GetUserProjects(ctx interface{}, req *controllers.ProjectRequest) (*controllers.ProjectResponse, error) {
+func (m *MockProjectController) GetUserProjects(ctx context.Context, req *controllers.ProjectRequest) (*controllers.ProjectResponse, error) {
 	return m.getUserProjectsResponse, m.getUserProjectsError
 }
 
-func (m *MockProjectController) CreateProject(ctx interface{}, req *controllers.ProjectRequest) (*controllers.ProjectResponse, error) {
+func (m *MockProjectController) CreateProject(ctx context.Context, req *controllers.ProjectRequest) (*controllers.ProjectResponse, error) {
 	return &controllers.ProjectResponse{Success: true, Message: "Project created"}, nil
 }
 
-func (m *MockProjectController) GetProject(ctx interface{}, req *controllers.ProjectRequest) (*controllers.ProjectResponse, error) {
+func (m *MockProjectController) GetProject(ctx context.Context, req *controllers.ProjectRequest) (*controllers.ProjectResponse, error) {
 	return &controllers.ProjectResponse{Success: true, Message: "Project retrieved"}, nil
 }
 
-func (m *MockProjectController) UpdateProject(ctx interface{}, req *controllers.ProjectRequest) (*controllers.ProjectResponse, error) {
+func (m *MockProjectController) UpdateProject(ctx context.Context, req *controllers.ProjectRequest) (*controllers.ProjectResponse, error) {
 	return &controllers.ProjectResponse{Success: true, Message: "Project updated"}, nil
 }
 
-func (m *MockProjectController) DeleteProject(ctx interface{}, req *controllers.ProjectRequest) (*controllers.ProjectResponse, error) {
+func (m *MockProjectController) DeleteProject(ctx context.Context, req *controllers.ProjectRequest) (*controllers.ProjectResponse, error) {
 	return &controllers.ProjectResponse{Success: true, Message: "Project deleted"}, nil
 }
 
-func (m *MockProjectController) DuplicateProject(ctx interface{}, req *controllers.ProjectRequest) (*controllers.ProjectResponse, error) {
+func (m *MockProjectController) DuplicateProject(ctx context.Context, req *controllers.ProjectRequest) (*controllers.ProjectResponse, error) {
 	return &controllers.ProjectResponse{Success: true, Message: "Project duplicated"}, nil
 }

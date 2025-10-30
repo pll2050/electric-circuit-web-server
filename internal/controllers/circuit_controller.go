@@ -10,13 +10,15 @@ import (
 
 // CircuitController handles circuit-related business coordination
 type CircuitController struct {
-	circuitService *services.FirebaseCircuitService
+	circuitService  *services.FirebaseCircuitService
+	templateService *services.TemplateService
 }
 
 // NewCircuitController creates a new circuit controller
-func NewCircuitController(circuitService *services.FirebaseCircuitService) *CircuitController {
+func NewCircuitController(circuitService *services.FirebaseCircuitService, templateService *services.TemplateService) *CircuitController {
 	return &CircuitController{
-		circuitService: circuitService,
+		circuitService:  circuitService,
+		templateService: templateService,
 	}
 }
 
@@ -42,20 +44,8 @@ type CircuitResponse struct {
 
 // GetProjectCircuits retrieves circuits for a project
 func (c *CircuitController) GetProjectCircuits(ctx context.Context, req *CircuitRequest) (*CircuitResponse, error) {
-	// Validate request
-	if req.ProjectID == "" {
-		return &CircuitResponse{
-			Success: false,
-			Error:   "Project ID is required",
-		}, nil
-	}
-
-	if req.UserID == "" {
-		return &CircuitResponse{
-			Success: false,
-			Error:   "User ID is required",
-		}, nil
-	}
+	// Note: Basic validation (required fields) is done in Handler layer
+	// Controller focuses on business logic coordination
 
 	// Call service
 	circuits, err := c.circuitService.GetProjectCircuits(req.ProjectID, req.UserID)
@@ -75,20 +65,7 @@ func (c *CircuitController) GetProjectCircuits(ctx context.Context, req *Circuit
 
 // GetCircuit retrieves a specific circuit
 func (c *CircuitController) GetCircuit(ctx context.Context, req *CircuitRequest) (*CircuitResponse, error) {
-	// Validate request
-	if req.CircuitID == "" {
-		return &CircuitResponse{
-			Success: false,
-			Error:   "Circuit ID is required",
-		}, nil
-	}
-
-	if req.UserID == "" {
-		return &CircuitResponse{
-			Success: false,
-			Error:   "User ID is required",
-		}, nil
-	}
+	// Note: Basic validation (required fields) is done in Handler layer
 
 	// Call service
 	circuit, err := c.circuitService.GetCircuit(req.CircuitID, req.UserID)
@@ -108,29 +85,18 @@ func (c *CircuitController) GetCircuit(ctx context.Context, req *CircuitRequest)
 
 // CreateCircuit creates a new circuit
 func (c *CircuitController) CreateCircuit(ctx context.Context, req *CircuitRequest) (*CircuitResponse, error) {
-	// Validate request
-	if req.Name == "" {
+	// Note: Basic validation (required fields) is done in Handler layer
+	// Controller handles business logic validation and DTO mapping
+
+	// Business validation: Circuit name length
+	if len(req.Name) > 255 {
 		return &CircuitResponse{
 			Success: false,
-			Error:   "Circuit name is required",
+			Error:   "Circuit name must not exceed 255 characters",
 		}, nil
 	}
 
-	if req.ProjectID == "" {
-		return &CircuitResponse{
-			Success: false,
-			Error:   "Project ID is required",
-		}, nil
-	}
-
-	if req.UserID == "" {
-		return &CircuitResponse{
-			Success: false,
-			Error:   "User ID is required",
-		}, nil
-	}
-
-	// Create circuit model
+	// Create circuit model (DTO to Domain model)
 	circuit := &models.CircuitFirestore{
 		Name:        req.Name,
 		Description: req.Description,
@@ -163,18 +129,13 @@ func (c *CircuitController) CreateCircuit(ctx context.Context, req *CircuitReque
 
 // UpdateCircuit updates an existing circuit
 func (c *CircuitController) UpdateCircuit(ctx context.Context, req *CircuitRequest) (*CircuitResponse, error) {
-	// Validate request
-	if req.CircuitID == "" {
-		return &CircuitResponse{
-			Success: false,
-			Error:   "Circuit ID is required",
-		}, nil
-	}
+	// Note: Basic validation (required fields) is done in Handler layer
 
-	if req.UserID == "" {
+	// Business validation: Name length if provided
+	if req.Name != "" && len(req.Name) > 255 {
 		return &CircuitResponse{
 			Success: false,
-			Error:   "User ID is required",
+			Error:   "Circuit name must not exceed 255 characters",
 		}, nil
 	}
 
@@ -207,20 +168,7 @@ func (c *CircuitController) UpdateCircuit(ctx context.Context, req *CircuitReque
 
 // DeleteCircuit deletes a circuit
 func (c *CircuitController) DeleteCircuit(ctx context.Context, req *CircuitRequest) (*CircuitResponse, error) {
-	// Validate request
-	if req.CircuitID == "" {
-		return &CircuitResponse{
-			Success: false,
-			Error:   "Circuit ID is required",
-		}, nil
-	}
-
-	if req.UserID == "" {
-		return &CircuitResponse{
-			Success: false,
-			Error:   "User ID is required",
-		}, nil
-	}
+	// Note: Basic validation (required fields) is done in Handler layer
 
 	// Call service
 	err := c.circuitService.DeleteCircuit(req.CircuitID, req.UserID)
@@ -239,37 +187,18 @@ func (c *CircuitController) DeleteCircuit(ctx context.Context, req *CircuitReque
 
 // CreateFromTemplate creates a circuit from template
 func (c *CircuitController) CreateFromTemplate(ctx context.Context, req *CircuitRequest) (*CircuitResponse, error) {
-	// Validate request
-	if req.TemplateID == "" {
+	// Note: Basic validation (required fields) is done in Handler layer
+
+	// Business validation: Circuit name length
+	if len(req.Name) > 255 {
 		return &CircuitResponse{
 			Success: false,
-			Error:   "Template ID is required",
+			Error:   "Circuit name must not exceed 255 characters",
 		}, nil
 	}
 
-	if req.Name == "" {
-		return &CircuitResponse{
-			Success: false,
-			Error:   "Circuit name is required",
-		}, nil
-	}
-
-	if req.ProjectID == "" {
-		return &CircuitResponse{
-			Success: false,
-			Error:   "Project ID is required",
-		}, nil
-	}
-
-	if req.UserID == "" {
-		return &CircuitResponse{
-			Success: false,
-			Error:   "User ID is required",
-		}, nil
-	}
-
-	// Get template data (this would be from a template service in the future)
-	templateData := c.getTemplateData(req.TemplateID)
+	// Get template data from TemplateService
+	templateData := c.templateService.GetTemplateData(req.TemplateID)
 	if templateData == nil {
 		return &CircuitResponse{
 			Success: false,
@@ -306,34 +235,4 @@ func (c *CircuitController) CreateFromTemplate(ctx context.Context, req *Circuit
 		Message: fmt.Sprintf("Circuit created from template %s successfully", req.TemplateID),
 		Circuit: circuit,
 	}, nil
-}
-
-// getTemplateData returns template data (mock implementation)
-func (c *CircuitController) getTemplateData(templateID string) map[string]interface{} {
-	templates := map[string]map[string]interface{}{
-		"template_basic_circuit": {
-			"components": []map[string]interface{}{
-				{"id": "battery1", "type": "battery", "x": 100, "y": 100},
-				{"id": "resistor1", "type": "resistor", "x": 200, "y": 100},
-				{"id": "led1", "type": "led", "x": 300, "y": 100},
-			},
-			"connections": []map[string]interface{}{
-				{"from": "battery1", "to": "resistor1"},
-				{"from": "resistor1", "to": "led1"},
-			},
-		},
-		"template_amplifier": {
-			"components": []map[string]interface{}{
-				{"id": "opamp1", "type": "opamp", "x": 200, "y": 150},
-				{"id": "r1", "type": "resistor", "x": 100, "y": 100},
-				{"id": "r2", "type": "resistor", "x": 100, "y": 200},
-			},
-			"connections": []map[string]interface{}{
-				{"from": "r1", "to": "opamp1"},
-				{"from": "r2", "to": "opamp1"},
-			},
-		},
-	}
-
-	return templates[templateID]
 }

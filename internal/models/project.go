@@ -16,15 +16,7 @@ type Project struct {
 	UpdatedAt   time.Time              `json:"updated_at" firestore:"updatedAt"`
 }
 
-// User represents a Firebase user
-type User struct {
-	UID         string    `json:"uid"`
-	Email       string    `json:"email"`
-	DisplayName string    `json:"display_name"`
-	PhotoURL    string    `json:"photo_url"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-}
+// Note: User model is now defined in user.go to avoid duplication
 
 // CircuitFirestore represents a circuit in Firestore
 type CircuitFirestore struct {

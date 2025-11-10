@@ -49,7 +49,7 @@ namespace ElectricCircuitWeb.API.Migrations
 
                     b.HasIndex("ProjectId");
 
-                    b.ToTable("Circuits");
+                    b.ToTable("Circuits", (string)null);
                 });
 
             modelBuilder.Entity("ElectricCircuitWeb.API.Models.Project", b =>
@@ -79,7 +79,7 @@ namespace ElectricCircuitWeb.API.Migrations
 
                     b.HasIndex("OwnerId");
 
-                    b.ToTable("Projects");
+                    b.ToTable("Projects", (string)null);
                 });
 
             modelBuilder.Entity("ElectricCircuitWeb.API.Models.User", b =>
@@ -108,6 +108,9 @@ namespace ElectricCircuitWeb.API.Migrations
                     b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("text");
+
                     b.Property<string>("PhotoUrl")
                         .HasColumnType("text");
 
@@ -124,7 +127,7 @@ namespace ElectricCircuitWeb.API.Migrations
                     b.HasIndex("FirebaseUid")
                         .IsUnique();
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 #pragma warning restore 612, 618
         }

@@ -107,7 +107,7 @@ public class AuthService : IAuthService
         return await _userRepository.UpdateLastLoginAtAsync(userId);
     }
 
-    public async Task<UserRecord> UpdateFirebaseUserAsync(string uid, string? email = null, string? displayName = null, string? photoUrl = null, string? password = null)
+    public async Task<UserRecord> UpdateFirebaseUserAsync(string uid, string? email = null, string? displayName = null, string? photoUrl = null, string? password = null, string? phoneNumber = null)
     {
         try
         {
@@ -124,6 +124,8 @@ public class AuthService : IAuthService
                 args.PhotoUrl = photoUrl;
             if (!string.IsNullOrEmpty(password))
                 args.Password = password;
+            if (!string.IsNullOrEmpty(phoneNumber))
+                args.PhoneNumber = phoneNumber;
 
             var user = await FirebaseAuth.DefaultInstance.UpdateUserAsync(args);
             _logger.LogInformation("Updated Firebase user: {Uid}", uid);

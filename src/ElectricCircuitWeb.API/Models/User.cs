@@ -11,6 +11,7 @@ public class User
     public string DisplayName { get; set; } = string.Empty;
     public string? PhotoUrl { get; set; }
     public string? Provider { get; set; }
+    public string? PhoneNumber { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
     public DateTime? LastLoginAt { get; set; }

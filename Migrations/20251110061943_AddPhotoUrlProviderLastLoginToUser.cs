@@ -18,6 +18,12 @@ namespace ElectricCircuitWeb.API.Migrations
                 nullable: true);
 
             migrationBuilder.AddColumn<string>(
+                name: "PhoneNumber",
+                table: "Users",
+                type: "text",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
                 name: "PhotoUrl",
                 table: "Users",
                 type: "text",
@@ -35,6 +41,10 @@ namespace ElectricCircuitWeb.API.Migrations
         {
             migrationBuilder.DropColumn(
                 name: "LastLoginAt",
+                table: "Users");
+
+            migrationBuilder.DropColumn(
+                name: "PhoneNumber",
                 table: "Users");
 
             migrationBuilder.DropColumn(

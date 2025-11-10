@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ElectricCircuitWeb.API.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251110044402_AddPhotoUrlProviderLastLoginToUser")]
+    [Migration("20251110061943_AddPhotoUrlProviderLastLoginToUser")]
     partial class AddPhotoUrlProviderLastLoginToUser
     {
         /// <inheritdoc />
@@ -110,6 +110,9 @@ namespace ElectricCircuitWeb.API.Migrations
 
                     b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("text");
 
                     b.Property<string>("PhotoUrl")
                         .HasColumnType("text");

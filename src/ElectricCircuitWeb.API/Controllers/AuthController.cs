@@ -298,7 +298,8 @@ public class AuthController : ControllerBase
                 request.Email,
                 request.DisplayName,
                 request.PhotoUrl,
-                request.Password
+                request.Password,
+                request.PhoneNumber
             );
 
             return Ok(new
@@ -309,13 +310,87 @@ public class AuthController : ControllerBase
                 {
                     uid = firebaseUser.Uid,
                     displayName = firebaseUser.DisplayName,
-                    photoURL = firebaseUser.PhotoUrl
+                    photoURL = firebaseUser.PhotoUrl,
+                    phoneNumber = firebaseUser.PhoneNumber
                 }
             });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating user: {Uid}", request.Uid);
+            return StatusCode(500, new
+            {
+                success = false,
+                error = ex.Message
+            });
+        }
+    }
+
+    /// <summary>
+    /// 사용자 프로필 정보를 수정합니다.
+    /// PUT /api/auth/update-profile
+    /// </summary>
+    [HttpPut("update-profile")]
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(request.IdToken))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = "ID token is required"
+                });
+            }
+
+            // ID 토큰 검증
+            var firebaseUid = await _authService.VerifyIdTokenAsync(request.IdToken);
+
+            // Firebase 사용자 정보 업데이트
+            var firebaseUser = await _authService.UpdateFirebaseUserAsync(
+                firebaseUid,
+                null, // Email은 변경하지 않음
+                request.DisplayName,
+                request.PhotoUrl,
+                null, // Password는 변경하지 않음
+                request.PhoneNumber
+            );
+
+            // PostgreSQL DB의 사용자 정보도 업데이트
+            var dbUser = await _authService.GetUserByFirebaseUidAsync(firebaseUid);
+            if (dbUser != null)
+            {
+                dbUser.DisplayName = request.DisplayName ?? dbUser.DisplayName;
+                dbUser.PhotoUrl = request.PhotoUrl ?? dbUser.PhotoUrl;
+                dbUser.PhoneNumber = request.PhoneNumber ?? dbUser.PhoneNumber;
+                await _authService.UpdateUserAsync(dbUser);
+            }
+
+            return Ok(new
+            {
+                success = true,
+                message = "Profile updated successfully",
+                user = new
+                {
+                    uid = firebaseUser.Uid,
+                    displayName = firebaseUser.DisplayName,
+                    photoURL = firebaseUser.PhotoUrl,
+                    phoneNumber = firebaseUser.PhoneNumber
+                }
+            });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized(new
+            {
+                success = false,
+                error = "Invalid token"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating profile");
             return StatusCode(500, new
             {
                 success = false,
@@ -418,5 +493,6 @@ public class AuthController : ControllerBase
 public record VerifyTokenRequest(string Token);
 public record SignUpRequest(string IdToken, string Email, string DisplayName, string? Provider = null);
 public record CreateUserRequest(string Email, string Password, string? DisplayName = null, string? PhotoUrl = null);
-public record UpdateUserRequest(string Uid, string? Email = null, string? DisplayName = null, string? PhotoUrl = null, string? Password = null);
+public record UpdateUserRequest(string Uid, string? Email = null, string? DisplayName = null, string? PhotoUrl = null, string? Password = null, string? PhoneNumber = null);
+public record UpdateProfileRequest(string IdToken, string? DisplayName = null, string? PhotoUrl = null, string? PhoneNumber = null);
 public record SetCustomClaimsRequest(string Uid, Dictionary<string, object> CustomClaims);

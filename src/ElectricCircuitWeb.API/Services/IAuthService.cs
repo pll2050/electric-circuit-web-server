@@ -21,6 +21,7 @@ public interface IAuthService
 
     // 사용자 수정
     Task<User> UpdateUserAsync(User user);
+    Task<User> UpdateLastLoginAtAsync(int userId);
     Task<UserRecord> UpdateFirebaseUserAsync(string uid, string? email = null, string? displayName = null, string? photoUrl = null, string? password = null);
 
     // 사용자 삭제

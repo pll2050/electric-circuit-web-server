@@ -159,9 +159,8 @@ public class AuthController : ControllerBase
             var existingUser = await _authService.GetUserByFirebaseUidAsync(firebaseUid);
             if (existingUser != null)
             {
-                // 기존 사용자의 경우 LastLoginAt 업데이트
-                existingUser.LastLoginAt = DateTime.UtcNow;
-                await _authService.UpdateUserAsync(existingUser);
+                // 기존 사용자의 경우 LastLoginAt만 업데이트 (UpdatedAt은 변경하지 않음)
+                var updatedUser = await _authService.UpdateLastLoginAtAsync(existingUser.Id);
 
                 return Ok(new
                 {
@@ -169,10 +168,10 @@ public class AuthController : ControllerBase
                     message = "User login successful",
                     user = new
                     {
-                        existingUser.Id,
-                        existingUser.FirebaseUid,
-                        existingUser.Email,
-                        existingUser.DisplayName
+                        updatedUser.Id,
+                        updatedUser.FirebaseUid,
+                        updatedUser.Email,
+                        updatedUser.DisplayName
                     }
                 });
             }

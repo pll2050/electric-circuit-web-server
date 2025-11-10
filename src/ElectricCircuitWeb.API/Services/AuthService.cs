@@ -102,6 +102,11 @@ public class AuthService : IAuthService
         return await _userRepository.UpdateAsync(user);
     }
 
+    public async Task<User> UpdateLastLoginAtAsync(int userId)
+    {
+        return await _userRepository.UpdateLastLoginAtAsync(userId);
+    }
+
     public async Task<UserRecord> UpdateFirebaseUserAsync(string uid, string? email = null, string? displayName = null, string? photoUrl = null, string? password = null)
     {
         try

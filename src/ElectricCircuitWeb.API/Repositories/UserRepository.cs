@@ -47,6 +47,18 @@ public class UserRepository : IUserRepository
         return user;
     }
 
+    public async Task<User> UpdateLastLoginAtAsync(int userId)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null)
+            throw new InvalidOperationException($"User with ID {userId} not found");
+
+        user.LastLoginAt = DateTime.UtcNow;
+        // UpdatedAt은 변경하지 않음
+        await _context.SaveChangesAsync();
+        return user;
+    }
+
     public async Task<bool> DeleteAsync(int id)
     {
         var user = await _context.Users.FindAsync(id);

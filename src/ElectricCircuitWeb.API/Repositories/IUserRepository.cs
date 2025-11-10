@@ -9,6 +9,7 @@ public interface IUserRepository
 {
     Task<User?> GetByIdAsync(int id);
     Task<User?> GetByFirebaseUidAsync(string firebaseUid);
+    Task<IEnumerable<User>> GetAllAsync();
     Task<User> CreateAsync(User user);
     Task<User> UpdateAsync(User user);
     Task<bool> DeleteAsync(int id);

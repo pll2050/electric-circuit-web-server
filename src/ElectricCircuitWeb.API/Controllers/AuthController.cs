@@ -19,46 +19,132 @@ public class AuthController : ControllerBase
         _logger = logger;
     }
 
+    // ==================== 토큰 검증 ====================
+
     /// <summary>
     /// Firebase ID 토큰을 검증하고 사용자 정보를 반환합니다.
+    /// POST /api/auth/verify
     /// </summary>
     [HttpPost("verify")]
     public async Task<IActionResult> VerifyToken([FromBody] VerifyTokenRequest request)
     {
         try
         {
-            var firebaseUid = await _authService.VerifyIdTokenAsync(request.IdToken);
-            var user = await _authService.GetUserByFirebaseUidAsync(firebaseUid);
+            var firebaseUid = await _authService.VerifyIdTokenAsync(request.Token);
+            var firebaseUser = await _authService.GetFirebaseUserAsync(firebaseUid);
 
-            if (user == null)
+            if (firebaseUser == null)
             {
-                return NotFound(new { message = "User not found" });
+                return NotFound(new
+                {
+                    success = false,
+                    error = "User not found"
+                });
             }
 
             return Ok(new
             {
+                success = true,
+                message = "Token verified successfully",
                 user = new
                 {
-                    user.Id,
-                    user.FirebaseUid,
-                    user.Email,
-                    user.DisplayName
+                    uid = firebaseUser.Uid,
+                    email = firebaseUser.Email,
+                    emailVerified = firebaseUser.EmailVerified,
+                    displayName = firebaseUser.DisplayName
                 }
             });
         }
         catch (UnauthorizedAccessException)
         {
-            return Unauthorized(new { message = "Invalid token" });
+            return Unauthorized(new
+            {
+                success = false,
+                error = "Invalid token"
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error verifying token");
-            return StatusCode(500, new { message = "Internal server error" });
+            return StatusCode(500, new
+            {
+                success = false,
+                error = "Internal server error"
+            });
+        }
+    }
+
+    // ==================== 사용자 생성 ====================
+
+    /// <summary>
+    /// 서버에서 직접 Firebase 사용자를 생성합니다 (관리자용).
+    /// POST /api/auth/create-user
+    /// </summary>
+    [HttpPost("create-user")]
+    public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(request.Email))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = "Email is required"
+                });
+            }
+
+            if (string.IsNullOrEmpty(request.Password))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = "Password is required"
+                });
+            }
+
+            // Firebase에 사용자 생성
+            var firebaseUser = await _authService.CreateFirebaseUserAsync(
+                request.Email,
+                request.Password,
+                request.DisplayName,
+                request.PhotoUrl
+            );
+
+            // PostgreSQL DB에 사용자 정보 저장
+            var user = await _authService.CreateUserAsync(
+                firebaseUser.Uid,
+                firebaseUser.Email,
+                firebaseUser.DisplayName
+            );
+
+            return Ok(new
+            {
+                success = true,
+                message = "User created successfully",
+                user = new
+                {
+                    id = user.Id,
+                    uid = firebaseUser.Uid,
+                    email = firebaseUser.Email,
+                    displayName = firebaseUser.DisplayName
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating user");
+            return StatusCode(500, new
+            {
+                success = false,
+                error = ex.Message
+            });
         }
     }
 
     /// <summary>
-    /// 새 사용자를 생성합니다.
+    /// 새 사용자를 가입시킵니다 (토큰 검증 후 DB에 저장).
+    /// POST /api/auth/signup
     /// </summary>
     [HttpPost("signup")]
     public async Task<IActionResult> SignUp([FromBody] SignUpRequest request)
@@ -71,7 +157,11 @@ public class AuthController : ControllerBase
             var existingUser = await _authService.GetUserByFirebaseUidAsync(firebaseUid);
             if (existingUser != null)
             {
-                return Conflict(new { message = "User already exists" });
+                return Conflict(new
+                {
+                    success = false,
+                    error = "User already exists"
+                });
             }
 
             var user = await _authService.CreateUserAsync(
@@ -82,6 +172,8 @@ public class AuthController : ControllerBase
 
             return Ok(new
             {
+                success = true,
+                message = "User registered successfully",
                 user = new
                 {
                     user.Id,
@@ -93,15 +185,221 @@ public class AuthController : ControllerBase
         }
         catch (UnauthorizedAccessException)
         {
-            return Unauthorized(new { message = "Invalid token" });
+            return Unauthorized(new
+            {
+                success = false,
+                error = "Invalid token"
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error signing up");
-            return StatusCode(500, new { message = "Internal server error" });
+            return StatusCode(500, new
+            {
+                success = false,
+                error = "Internal server error"
+            });
+        }
+    }
+
+    // ==================== 사용자 조회 ====================
+
+    /// <summary>
+    /// 사용자 정보를 조회합니다.
+    /// GET /api/auth/get-user?uid={uid}
+    /// </summary>
+    [HttpGet("get-user")]
+    public async Task<IActionResult> GetUser([FromQuery] string uid)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(uid))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = "User UID is required"
+                });
+            }
+
+            var firebaseUser = await _authService.GetFirebaseUserAsync(uid);
+            if (firebaseUser == null)
+            {
+                return NotFound(new
+                {
+                    success = false,
+                    error = "User not found"
+                });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                message = "User found",
+                user = new
+                {
+                    uid = firebaseUser.Uid,
+                    email = firebaseUser.Email,
+                    displayName = firebaseUser.DisplayName,
+                    photoURL = firebaseUser.PhotoUrl
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting user: {Uid}", uid);
+            return StatusCode(500, new
+            {
+                success = false,
+                error = "Internal server error"
+            });
+        }
+    }
+
+    // ==================== 사용자 수정 ====================
+
+    /// <summary>
+    /// 사용자 정보를 수정합니다.
+    /// PUT /api/auth/update-user
+    /// </summary>
+    [HttpPut("update-user")]
+    public async Task<IActionResult> UpdateUser([FromBody] UpdateUserRequest request)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(request.Uid))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = "User UID is required"
+                });
+            }
+
+            var firebaseUser = await _authService.UpdateFirebaseUserAsync(
+                request.Uid,
+                request.Email,
+                request.DisplayName,
+                request.PhotoUrl,
+                request.Password
+            );
+
+            return Ok(new
+            {
+                success = true,
+                message = "User updated successfully",
+                user = new
+                {
+                    uid = firebaseUser.Uid,
+                    displayName = firebaseUser.DisplayName,
+                    photoURL = firebaseUser.PhotoUrl
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating user: {Uid}", request.Uid);
+            return StatusCode(500, new
+            {
+                success = false,
+                error = ex.Message
+            });
+        }
+    }
+
+    // ==================== 사용자 삭제 ====================
+
+    /// <summary>
+    /// 사용자를 삭제합니다.
+    /// DELETE /api/auth/delete-user?uid={uid}
+    /// </summary>
+    [HttpDelete("delete-user")]
+    public async Task<IActionResult> DeleteUser([FromQuery] string uid)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(uid))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = "User UID is required"
+                });
+            }
+
+            await _authService.DeleteFirebaseUserAsync(uid);
+            await _authService.DeleteUserAsync(uid);
+
+            return Ok(new
+            {
+                success = true,
+                message = "User deleted successfully"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting user: {Uid}", uid);
+            return StatusCode(500, new
+            {
+                success = false,
+                error = ex.Message
+            });
+        }
+    }
+
+    // ==================== 커스텀 클레임 ====================
+
+    /// <summary>
+    /// 사용자에게 커스텀 클레임을 설정합니다.
+    /// POST /api/auth/set-custom-claims
+    /// </summary>
+    [HttpPost("set-custom-claims")]
+    public async Task<IActionResult> SetCustomClaims([FromBody] SetCustomClaimsRequest request)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(request.Uid))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = "User UID is required"
+                });
+            }
+
+            if (request.CustomClaims == null)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = "Custom claims are required"
+                });
+            }
+
+            await _authService.SetCustomClaimsAsync(request.Uid, request.CustomClaims);
+
+            return Ok(new
+            {
+                success = true,
+                message = "Custom claims set successfully"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error setting custom claims: {Uid}", request.Uid);
+            return StatusCode(500, new
+            {
+                success = false,
+                error = ex.Message
+            });
         }
     }
 }
 
-public record VerifyTokenRequest(string IdToken);
+// ==================== Request/Response Models ====================
+
+public record VerifyTokenRequest(string Token);
 public record SignUpRequest(string IdToken, string Email, string DisplayName);
+public record CreateUserRequest(string Email, string Password, string? DisplayName = null, string? PhotoUrl = null);
+public record UpdateUserRequest(string Uid, string? Email = null, string? DisplayName = null, string? PhotoUrl = null, string? Password = null);
+public record SetCustomClaimsRequest(string Uid, Dictionary<string, object> CustomClaims);

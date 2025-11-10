@@ -27,6 +27,11 @@ public class UserRepository : IUserRepository
             .FirstOrDefaultAsync(u => u.FirebaseUid == firebaseUid);
     }
 
+    public async Task<IEnumerable<User>> GetAllAsync()
+    {
+        return await _context.Users.ToListAsync();
+    }
+
     public async Task<User> CreateAsync(User user)
     {
         _context.Users.Add(user);

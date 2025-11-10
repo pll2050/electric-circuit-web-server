@@ -33,4 +33,5 @@ public interface IAuthService
 
     // 사용자 목록
     Task<IEnumerable<User>> GetAllUsersAsync();
+    Task<IEnumerable<User>> GetAllFirebaseUsersAsync();
 }

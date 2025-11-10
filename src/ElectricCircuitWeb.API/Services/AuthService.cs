@@ -186,4 +186,75 @@ public class AuthService : IAuthService
         // PostgreSQL에서 모든 사용자 조회
         return await Task.FromResult(_userRepository.GetAllAsync().Result);
     }
+
+    public async Task<IEnumerable<User>> GetAllFirebaseUsersAsync()
+    {
+        try
+        {
+            _logger.LogInformation("Starting to fetch users from Firebase Authentication");
+
+            var users = new List<User>();
+            var pagedEnumerable = FirebaseAuth.DefaultInstance.ListUsersAsync(null);
+
+            _logger.LogInformation("ListUsersAsync called, getting enumerator");
+            var enumerator = pagedEnumerable.GetAsyncEnumerator();
+
+            int count = 0;
+            // Iterate through all Firebase users
+            while (await enumerator.MoveNextAsync())
+            {
+                count++;
+                var firebaseUser = enumerator.Current;
+                _logger.LogInformation("Processing user {Count}: {Uid}, {Email}", count, firebaseUser.Uid, firebaseUser.Email);
+
+                // Convert Firebase user to our User model
+                var createdAt = firebaseUser.UserMetaData?.CreationTimestamp ?? DateTime.UtcNow;
+                var lastLoginAt = firebaseUser.UserMetaData?.LastSignInTimestamp;
+
+                var user = new User
+                {
+                    FirebaseUid = firebaseUser.Uid,
+                    Email = firebaseUser.Email ?? string.Empty,
+                    DisplayName = firebaseUser.DisplayName ?? string.Empty,
+                    PhotoUrl = firebaseUser.PhotoUrl,
+                    PhoneNumber = firebaseUser.PhoneNumber,
+                    Provider = GetProviderName(firebaseUser.ProviderData),
+                    CreatedAt = createdAt,
+                    LastLoginAt = lastLoginAt,
+                    UpdatedAt = lastLoginAt ?? createdAt
+                };
+
+                users.Add(user);
+            }
+
+            _logger.LogInformation("Total users retrieved from Firebase Authentication: {Count}", users.Count);
+
+            if (users.Count == 0)
+            {
+                _logger.LogWarning("No users found in Firebase Authentication. This might indicate a permission issue or no users exist.");
+            }
+
+            return users;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to list Firebase users");
+            throw;
+        }
+    }
+
+    private string GetProviderName(IUserInfo[] providerData)
+    {
+        if (providerData == null || providerData.Length == 0)
+            return "email";
+
+        var providerId = providerData[0].ProviderId;
+
+        return providerId switch
+        {
+            "google.com" => "google",
+            "password" => "email",
+            _ => providerId
+        };
+    }
 }

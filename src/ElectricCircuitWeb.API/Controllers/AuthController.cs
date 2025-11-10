@@ -159,10 +159,21 @@ public class AuthController : ControllerBase
             var existingUser = await _authService.GetUserByFirebaseUidAsync(firebaseUid);
             if (existingUser != null)
             {
-                return Conflict(new
+                // 기존 사용자의 경우 LastLoginAt 업데이트
+                existingUser.LastLoginAt = DateTime.UtcNow;
+                await _authService.UpdateUserAsync(existingUser);
+
+                return Ok(new
                 {
-                    success = false,
-                    error = "User already exists"
+                    success = true,
+                    message = "User login successful",
+                    user = new
+                    {
+                        existingUser.Id,
+                        existingUser.FirebaseUid,
+                        existingUser.Email,
+                        existingUser.DisplayName
+                    }
                 });
             }
 

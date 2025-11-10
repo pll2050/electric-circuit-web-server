@@ -57,13 +57,15 @@ public class AuthService : IAuthService
 
     // ==================== 사용자 생성 ====================
 
-    public async Task<User> CreateUserAsync(string firebaseUid, string email, string displayName)
+    public async Task<User> CreateUserAsync(string firebaseUid, string email, string displayName, string? photoUrl = null, string? provider = null)
     {
         var user = new User
         {
             FirebaseUid = firebaseUid,
             Email = email,
-            DisplayName = displayName
+            DisplayName = displayName,
+            PhotoUrl = photoUrl,
+            Provider = provider
         };
 
         return await _userRepository.CreateAsync(user);

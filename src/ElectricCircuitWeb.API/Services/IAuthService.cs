@@ -16,7 +16,7 @@ public interface IAuthService
     Task<UserRecord?> GetFirebaseUserAsync(string uid);
 
     // 사용자 생성
-    Task<User> CreateUserAsync(string firebaseUid, string email, string displayName);
+    Task<User> CreateUserAsync(string firebaseUid, string email, string displayName, string? photoUrl = null, string? provider = null);
     Task<UserRecord> CreateFirebaseUserAsync(string email, string password, string? displayName = null, string? photoUrl = null);
 
     // 사용자 수정

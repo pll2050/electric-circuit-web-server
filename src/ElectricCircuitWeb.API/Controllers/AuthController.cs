@@ -115,7 +115,9 @@ public class AuthController : ControllerBase
             var user = await _authService.CreateUserAsync(
                 firebaseUser.Uid,
                 firebaseUser.Email,
-                firebaseUser.DisplayName
+                firebaseUser.DisplayName,
+                firebaseUser.PhotoUrl,
+                "password" // provider: 이메일/비밀번호 방식
             );
 
             return Ok(new
@@ -164,10 +166,15 @@ public class AuthController : ControllerBase
                 });
             }
 
+            // Firebase에서 사용자 정보 가져오기
+            var firebaseUser = await _authService.GetFirebaseUserAsync(firebaseUid);
+
             var user = await _authService.CreateUserAsync(
                 firebaseUid,
                 request.Email,
-                request.DisplayName
+                request.DisplayName,
+                firebaseUser?.PhotoUrl,
+                request.Provider ?? "email" // 클라이언트가 전달한 provider 사용 (기본값: email)
             );
 
             return Ok(new
@@ -399,7 +406,7 @@ public class AuthController : ControllerBase
 // ==================== Request/Response Models ====================
 
 public record VerifyTokenRequest(string Token);
-public record SignUpRequest(string IdToken, string Email, string DisplayName);
+public record SignUpRequest(string IdToken, string Email, string DisplayName, string? Provider = null);
 public record CreateUserRequest(string Email, string Password, string? DisplayName = null, string? PhotoUrl = null);
 public record UpdateUserRequest(string Uid, string? Email = null, string? DisplayName = null, string? PhotoUrl = null, string? Password = null);
 public record SetCustomClaimsRequest(string Uid, Dictionary<string, object> CustomClaims);
